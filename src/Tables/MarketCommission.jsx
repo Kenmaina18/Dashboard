@@ -4,16 +4,9 @@ export default function MarketerCommissionTable() {
   const [commissions, setCommissions] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
-  // Conversion rate: 1 USD = 129 KES (static for this example)
-  const USD_TO_KES_RATE = 129;
-
-  const convertToKES = (amount) => {
-    return (amount * USD_TO_KES_RATE).toFixed(2);
-  };
-
   const fetchCommissions = async () => {
     try {
-      const response = await fetch('/api/marketer-commissions');
+      const response = await fetch('');
       if (!response.ok) throw new Error('Failed to fetch marketer commissions');
       const data = await response.json();
       setCommissions(data);
@@ -80,9 +73,9 @@ export default function MarketerCommissionTable() {
                 <tr key={commission.id} className="main-row">
                   <th scope="row" style={{ fontWeight: '600' }}>{commission.id}</th>
                   <td style={{ textAlign: 'left' }}>{commission.marketer}</td>
-                  <td align="right">KES {convertToKES(commission.total_amount)}</td>
+                  <td align="right">KES {commission.total_amount.toFixed(2)}</td>
                   <td align="right">{commission.commission_percentage.toFixed(2)}%</td>
-                  <td align="right">KES {convertToKES(commission.commission_earned)}</td>
+                  <td align="right">KES {commission.commission_earned.toFixed(2)}</td>
                   <td align="right">{new Date(commission.calculated_at).toLocaleString()}</td>
                   <td align="right">{commission.period_start}</td>
                   <td align="right">{commission.period_end}</td>

@@ -10,7 +10,7 @@ function Row(props) {
     if (!open) {
       setLoadingPayments(true);
       try {
-        const response = await fetch(`/api/payments?lead_file=${encodeURIComponent(row.lead_file)}`);
+        const response = await fetch(``);
         if (!response.ok) throw new Error('Failed to fetch payments');
         const data = await response.json();
         setPayments(data);
@@ -99,7 +99,7 @@ export default function CollapsibleTable() {
   React.useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const response = await fetch('/api/leads');
+        const response = await fetch('');
         if (!response.ok) throw new Error('Failed to fetch leads');
         const data = await response.json();
         setRows(data);

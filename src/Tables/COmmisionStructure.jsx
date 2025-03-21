@@ -86,7 +86,7 @@ export default function CommissionRangeTable() {
 
   const fetchRanges = async () => {
     try {
-      const response = await fetch('/api/commission-ranges');
+      const response = await fetch('');
       if (!response.ok) throw new Error('Failed to fetch commission ranges');
       const data = await response.json();
       setRanges(data);
@@ -104,7 +104,7 @@ export default function CommissionRangeTable() {
 
   const handleAddRange = async (formData) => {
     try {
-      const response = await fetch('/api/commission-ranges', {
+      const response = await fetch('', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -123,7 +123,7 @@ export default function CommissionRangeTable() {
 
   const handleUpdateRange = async (rangeId, formData) => {
     try {
-      const response = await fetch(`/api/commission-ranges/${rangeId}`, {
+      const response = await fetch(``, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -145,7 +145,7 @@ export default function CommissionRangeTable() {
   const handleDeleteRange = async (rangeId) => {
     if (window.confirm('Are you sure you want to delete this commission range?')) {
       try {
-        const response = await fetch(`/api/commission-ranges/${rangeId}`, {
+        const response = await fetch(``, {
           method: 'DELETE',
         });
         if (!response.ok) throw new Error('Failed to delete commission range');

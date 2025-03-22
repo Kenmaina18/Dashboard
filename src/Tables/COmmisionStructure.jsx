@@ -3,6 +3,10 @@ import * as React from 'react';
 function Modal({ isOpen, onClose, onSubmit, title, initialData = {} }) {
   const [formData, setFormData] = React.useState(initialData);
 
+  React.useEffect(() => {
+    setFormData(initialData);
+  }, [initialData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -17,58 +21,61 @@ function Modal({ isOpen, onClose, onSubmit, title, initialData = {} }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-      <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', width: '400px', maxWidth: '90%' }}>
-        <h3 style={{ marginBottom: '15px', color: '#2d3748' }}>{title}</h3>
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex', justifyContent: 'center', alignItems: 'center',
+      zIndex: 1000
+    }}>
+      <div style={{
+        backgroundColor: '#fff',
+        padding: '20px',
+        borderRadius: '8px',
+        width: '100%',
+        maxWidth: '420px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+        fontFamily: 'Inter, sans-serif'
+      }}>
+        <h3 style={{ marginBottom: '16px', color: '#2d3748', fontSize: '18px', fontWeight: 600 }}>{title}</h3>
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', fontSize: '14px', color: '#4a5568', marginBottom: '5px' }}>Lower Limit ($)</label>
-            <input
-              type="number"
-              name="lower_limit"
-              value={formData.lower_limit || ''}
-              onChange={handleChange}
-              step="0.01"
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', fontSize: '14px', color: '#4a5568', marginBottom: '5px' }}>Upper Limit ($)</label>
-            <input
-              type="number"
-              name="upper_limit"
-              value={formData.upper_limit || ''}
-              onChange={handleChange}
-              step="0.01"
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', fontSize: '14px', color: '#4a5568', marginBottom: '5px' }}>Percentage (%)</label>
-            <input
-              type="number"
-              name="percentage"
-              value={formData.percentage || ''}
-              onChange={handleChange}
-              step="0.01"
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}
-              required
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ padding: '8px 16px', backgroundColor: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
+          {['lower_limit', 'upper_limit', 'percentage'].map((field, index) => (
+            <div key={index} style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '14px', marginBottom: '4px', color: '#4a5568' }}>
+                {field === 'lower_limit' ? 'Lower Limit (Ksh)' :
+                  field === 'upper_limit' ? 'Upper Limit (Ksh)' : 'Percentage (%)'}
+              </label>
+              <input
+                type="number"
+                name={field}
+                value={formData[field] || ''}
+                onChange={handleChange}
+                step="0.01"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e0',
+                  fontSize: '14px',
+                  fontFamily: 'inherit'
+                }}
+                required
+              />
+            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button type="button" onClick={onClose} style={{
+              backgroundColor: '#edf2f7', padding: '8px 16px',
+              borderRadius: '4px', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit'
+            }}>
               Cancel
             </button>
-            <button
-              type="submit"
-              style={{ padding: '8px 16px', backgroundColor: '#2d3748', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
+            <button type="submit" style={{
+              backgroundColor: '#2d3748', color: '#fff',
+              padding: '8px 16px', borderRadius: '4px',
+              border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit'
+            }}>
               Save
             </button>
           </div>
@@ -86,13 +93,11 @@ export default function CommissionRangeTable() {
 
   const fetchRanges = async () => {
     try {
-      const response = await fetch('');
-      if (!response.ok) throw new Error('Failed to fetch commission ranges');
+      const response = await fetch('http://localhost:8000/api/finance/commission_structure');
       const data = await response.json();
       setRanges(data);
     } catch (error) {
       console.error('Error fetching commission ranges:', error);
-      setRanges([]);
     } finally {
       setLoading(false);
     }
@@ -104,7 +109,7 @@ export default function CommissionRangeTable() {
 
   const handleAddRange = async (formData) => {
     try {
-      const response = await fetch('', {
+      const response = await fetch('http://localhost:8000/api/finance/commission_structure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -113,7 +118,6 @@ export default function CommissionRangeTable() {
           percentage: parseFloat(formData.percentage),
         }),
       });
-      if (!response.ok) throw new Error('Failed to add commission range');
       const newRange = await response.json();
       setRanges((prev) => [...prev, newRange]);
     } catch (error) {
@@ -123,20 +127,13 @@ export default function CommissionRangeTable() {
 
   const handleUpdateRange = async (rangeId, formData) => {
     try {
-      const response = await fetch(``, {
+      const response = await fetch(`http://localhost:8000/api/finance/commission_structure`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lower_limit: parseFloat(formData.lower_limit),
-          upper_limit: parseFloat(formData.upper_limit),
-          percentage: parseFloat(formData.percentage),
-        }),
+        body: JSON.stringify(formData),
       });
-      if (!response.ok) throw new Error('Failed to update commission range');
       const updatedRange = await response.json();
-      setRanges((prev) =>
-        prev.map((range) => (range.id === rangeId ? updatedRange : range))
-      );
+      setRanges((prev) => prev.map((range) => (range.id === rangeId ? updatedRange : range)));
     } catch (error) {
       console.error('Error updating commission range:', error);
     }
@@ -145,10 +142,9 @@ export default function CommissionRangeTable() {
   const handleDeleteRange = async (rangeId) => {
     if (window.confirm('Are you sure you want to delete this commission range?')) {
       try {
-        const response = await fetch(``, {
+        await fetch(`http://localhost:8000/api/finance/commission_structure`, {
           method: 'DELETE',
         });
-        if (!response.ok) throw new Error('Failed to delete commission range');
         setRanges((prev) => prev.filter((range) => range.id !== rangeId));
       } catch (error) {
         console.error('Error deleting commission range:', error);
@@ -156,48 +152,41 @@ export default function CommissionRangeTable() {
     }
   };
 
+  const formatCurrency = (value) => `Ksh ${new Intl.NumberFormat().format(value)}`;
+
   return (
-    <>
-      <div style={{ marginBottom: '15px' }}>
-        <button
-          onClick={() => setAddModalOpen(true)}
-          style={{ padding: '8px 16px', backgroundColor: '#2d3748', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
+    <div style={{ padding: '16px', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => setAddModalOpen(true)} style={{
+          padding: '10px 20px', backgroundColor: '#2d3748', color: '#fff',
+          border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px',
+          fontFamily: 'inherit'
+        }}>
           Add Commission Range
         </button>
       </div>
-      <div
-        style={{
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          backgroundColor: '#fff',
-          maxWidth: '100%',
-          margin: '0 auto',
-        }}
-      >
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            tableLayout: 'fixed',
-          }}
-          aria-label="commission ranges table"
-        >
+
+      <div style={{
+        overflowX: 'auto',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+        borderRadius: '8px',
+        backgroundColor: '#fff',
+      }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr className="header-row">
-              <th style={{ textAlign: 'left' }}>Range ID</th>
-              <th align="right">Lower Limit (kes)</th>
-              <th align="right">Upper Limit (kes)</th>
-              <th align="right">Percentage (%)</th>
-              <th align="right">Actions</th>
+            <tr style={{ backgroundColor: '#f7fafc', textTransform: 'uppercase', fontSize: '13px', color: '#4a5568' }}>
+              <th style={{ padding: '12px 16px', textAlign: 'left' }}>ID</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Lower Limit</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Upper Limit</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Percentage</th>
+              <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={5} style={{ padding: '16px', textAlign: 'center', color: '#718096' }}>
-                  Loading commission ranges...
+                  Loading...
                 </td>
               </tr>
             ) : ranges.length === 0 ? (
@@ -208,24 +197,20 @@ export default function CommissionRangeTable() {
               </tr>
             ) : (
               ranges.map((range) => (
-                <tr key={range.id} className="main-row">
-                  <th scope="row" style={{ fontWeight: '600' }}>{range.id}</th>
-                  <td align="right">kes{range.lower_limit.toFixed(2)}</td>
-                  <td align="right">kes{range.upper_limit.toFixed(2)}</td>
-                  <td align="right">{range.percentage.toFixed(2)}%</td>
-                  <td align="right">
-                    <button
-                      onClick={() => setEditModalOpen(range)}
-                      style={{ background: 'none', border: 'none', color: '#4299e1', cursor: 'pointer', marginRight: '10px' }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteRange(range.id)}
-                      style={{ background: 'none', border: 'none', color: '#e53e3e', cursor: 'pointer' }}
-                    >
-                      Delete
-                    </button>
+                <tr key={range.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px 16px', fontWeight: 600 }}>{range.id}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(range.lower_limit)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>{formatCurrency(range.upper_limit)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>{range.percentage}%</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <button onClick={() => setEditModalOpen(range)} style={{
+                      color: '#3182ce', border: 'none', background: 'none',
+                      cursor: 'pointer', marginRight: '10px'
+                    }}>Edit</button>
+                    <button onClick={() => handleDeleteRange(range.id)} style={{
+                      color: '#e53e3e', border: 'none', background: 'none',
+                      cursor: 'pointer'
+                    }}>Delete</button>
                   </td>
                 </tr>
               ))
@@ -239,8 +224,8 @@ export default function CommissionRangeTable() {
         onClose={() => setAddModalOpen(false)}
         onSubmit={handleAddRange}
         title="Add Commission Range"
-        initialData={{}}
       />
+
       <Modal
         isOpen={!!isEditModalOpen}
         onClose={() => setEditModalOpen(null)}
@@ -248,53 +233,100 @@ export default function CommissionRangeTable() {
         title="Edit Commission Range"
         initialData={isEditModalOpen || {}}
       />
+    
+ 
+  {/* 🖌️ Google Font Import & Global CSS Update */}
+<style>{`
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-      {/* Global Styles */}
-      <style jsx>{`
-        .header-row {
-          background-color: #f4f7fa;
-          color: #2d3748;
-          font-size: 14px;
-          font-weight: 600;
-          text-transform: uppercase;
-        }
+  * {
+    font-family: 'Inter', sans-serif;
+  }
 
-        .header-row th {
-          padding: 16px;
-          border-bottom: 2px solid #e2e8f0;
-        }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
 
-        .main-row {
-          transition: background-color 0.2s ease;
-        }
+  th, td {
+    padding: 12px 18px;
+    font-size: 14px;
+  }
 
-        .main-row:hover {
-          background-color: #f7fafc;
-        }
+  thead tr {
+    background-color: #f7fafc;
+    text-transform: uppercase;
+    color: #4a5568;
+  }
 
-        .main-row td,
-        .main-row th {
-          padding: 16px;
-          border-bottom: 1px solid #e2e8f0;
-          font-size: 14px;
-          color: #4a5568;
-        }
+  tbody tr:hover {
+    background-color: #f9fafb;
+  }
 
-        @media (max-width: 768px) {
-          table {
-            display: block;
-            overflow-x: auto;
-            white-space: nowrap;
-          }
+  button {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
 
-          .main-row td,
-          .main-row th,
-          .header-row th {
-            padding: 12px;
-            min-width: 100px;
-          }
-        }
-      `}</style>
-    </>
-  );
+  .action-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 6px 8px;
+  }
+
+  .action-button.edit {
+    color: #3182ce;
+    margin-right: 8px;
+  }
+
+  .action-button.delete {
+    color: #e53e3e;
+  }
+
+  .modal-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e0;
+    margin-top: 6px;
+  }
+
+  .modal-label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+    color: #4a5568;
+  }
+
+  .modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .modal-buttons button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .modal-buttons .cancel {
+    background-color: #edf2f7;
+    color: #2d3748;
+  }
+
+  .modal-buttons .save {
+    background-color: #2d3748;
+    color: #fff;
+  }
+`}</style>
+</div>
+);
 }

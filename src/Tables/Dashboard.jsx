@@ -6,6 +6,7 @@ import CollapsibleTable from './LeadsPage';
 import CommissionPeriodTable from './FinanceCommissionPeriod';
 import CommissionRangeTable from './COmmisionStructure';
 import MarketerCommissionTable from './MarketCommission';
+import Refunds from './Refunds';
 import './dashboard.css';
 
 // Page transition variants
@@ -39,6 +40,7 @@ function SidebarContent({ isOpen, toggleSidebar }) {
     { path: '/commission-periods', label: 'Commission Periods', icon: <Calendar size={20} /> },
     { path: '/commission-ranges', label: 'Commission Ranges', icon: <DollarSign size={20} /> },
     { path: '/marketer-commissions', label: 'Marketer Commissions', icon: <Users size={20} /> },
+    { path: '/refunds', label: 'Refunds', icon: <DollarSign size={20} /> },
   ];
 
   return (
@@ -110,6 +112,8 @@ function TopBarContent({ toggleSidebar }) {
         return 'Commission Ranges';
       case '/marketer-commissions':
         return 'Marketer Commissions';
+      case '/refunds':
+        return 'Refunds';
       default:
         return 'Dashboard';
     }
@@ -177,6 +181,11 @@ function AppRoutes({ isOpen }) {
         <Route path="/marketer-commissions" element={
           <PageWrapper title="Marketer Commissions">
             <MarketerCommissionTable />
+          </PageWrapper>
+        } />
+        <Route path="/refunds" element={
+          <PageWrapper title="Refunds">
+            <Refunds />
           </PageWrapper>
         } />
       </Routes>

@@ -86,53 +86,74 @@ function Modal({ isOpen, onClose, onSubmit, title, initialData = {} }) {
 }
 
 export default function CommissionPeriodTable() {
-  const [periods, setPeriods] = React.useState([
-    {
-      id: 1,
-      start_date: "2025-01-01T00:00:00Z",
-      end_date: "2025-03-31T23:59:59Z",
-      status: "Opened",
-    },
-    {
-      id: 2,
-      start_date: "2025-04-01T00:00:00Z",
-      end_date: "2025-06-30T23:59:59Z",
-      status: "Closed",
-    },
-  ]);
+  const [periods, setPeriods] = React.useState([]);
   const [isAddModalOpen, setAddModalOpen] = React.useState(false);
   const [isEditModalOpen, setEditModalOpen] = React.useState(null);
+  const [transactions, setTransactions] = React.useState([]);
 
-  const handleAddPeriod = (formData) => {
-    const newPeriod = {
-      id: periods.length ? Math.max(...periods.map(p => p.id)) + 1 : 1,
-      start_date: new Date(formData.start_date).toISOString(),
-      end_date: new Date(formData.end_date).toISOString(),
-      status: formData.status,
-    };
-    setPeriods((prev) => [...prev, newPeriod]);
-  };
-
-  const handleUpdatePeriod = (id, formData) => {
-    setPeriods((prev) =>
-      prev.map((period) =>
-        period.id === id
-          ? {
-              ...period,
-              start_date: new Date(formData.start_date).toISOString(),
-              end_date: new Date(formData.end_date).toISOString(),
-              status: formData.status,
-            }
-          : period
-      )
-    );
-  };
-
-  const handleDeletePeriod = (id) => {
-    if (window.confirm('Delete this commission period?')) {
-      setPeriods((prev) => prev.filter((p) => p.id !== id));
+  const fetchPeriods = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/finance/marketing_period');
+      const data = await response.json();
+      setPeriods(data);
+    } catch (error) {
+      console.error('Error fetching periods:', error);
     }
   };
+
+  const handleAddPeriod = async (formData) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/finance/marketing_period', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const newPeriod = await response.json();
+      setPeriods((prev) => [...prev, newPeriod]);
+    } catch (error) {
+      console.error('Error adding period:', error);
+    }
+  };
+
+  const handleUpdatePeriod = async (id, formData) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/finance/marketing_period/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const updatedPeriod = await response.json();
+      setPeriods((prev) => prev.map((p) => (p.id === id ? updatedPeriod : p)));
+    } catch (error) {
+      console.error('Error updating period:', error);
+    }
+  };
+
+  const handleDeletePeriod = async (id) => {
+    if (window.confirm('Delete this commission period?')) {
+      try {
+        await fetch(`http://localhost:8000/api/finance/marketing_period/${id}`, { method: 'DELETE' });
+        setPeriods((prev) => prev.filter((p) => p.id !== id));
+      } catch (error) {
+        console.error('Error deleting period:', error);
+      }
+    }
+  };
+
+  const fetchTransactions = async (periodId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/commission/highest`);
+      const data = await response.json();
+      setTransactions(data);
+      console.log('Transactions:', data);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchPeriods();
+  }, []);
 
   return (
     <div style={{ padding: '16px', fontFamily: 'Inter, sans-serif' }}>
@@ -181,26 +202,22 @@ export default function CommissionPeriodTable() {
               periods.map((p) => (
                 <tr key={p.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <td style={{ padding: '12px 14px', fontWeight: 600 }}>{p.id}</td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                    {new Date(p.start_date).toLocaleString()}
-                  </td>
-                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                    {new Date(p.end_date).toLocaleString()}
-                  </td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>{new Date(p.start_date).toLocaleString()}</td>
+                  <td style={{ padding: '12px 14px', textAlign: 'right' }}>{new Date(p.end_date).toLocaleString()}</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>{p.status}</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                     <button
                       onClick={() => setEditModalOpen(p)}
                       style={{ color: '#3182ce', border: 'none', background: 'none', cursor: 'pointer', marginRight: '10px' }}
-                    >
-                      Edit
-                    </button>
+                    >Edit</button>
                     <button
                       onClick={() => handleDeletePeriod(p.id)}
-                      style={{ color: '#e53e3e', border: 'none', background: 'none', cursor: 'pointer' }}
-                    >
-                      Delete
-                    </button>
+                      style={{ color: '#e53e3e', border: 'none', background: 'none', cursor: 'pointer', marginRight: '10px' }}
+                    >Delete</button>
+                    <button
+                      onClick={() => fetchTransactions(p.id)}
+                      style={{ color: '#38a169', border: 'none', background: 'none', cursor: 'pointer' }}
+                    >View Transactions</button>
                   </td>
                 </tr>
               ))
@@ -222,6 +239,17 @@ export default function CommissionPeriodTable() {
         title="Edit Commission Period"
         initialData={isEditModalOpen || {}}
       />
+
+      {transactions.length > 0 && (
+        <div style={{ marginTop: '24px' }}>
+          <h4 style={{ fontSize: '16px', marginBottom: '12px', fontWeight: '600' }}>Commission-Eligible Transactions</h4>
+          <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+            {transactions.map((txn) => (
+              <li key={txn.id}>{txn.marketer} – {txn.plot_number} – {txn.percentage}% – KES {txn.total_paid}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

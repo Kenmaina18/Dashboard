@@ -141,7 +141,7 @@ export default function CommissionPeriodTable() {
     }
   };
 
-  const fetchTransactions = async (periodId) => {
+  const fetchTransactions = async (Id) => {
     try {
       const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/commission/highest`);
       const data = await response.json();

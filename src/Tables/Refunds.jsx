@@ -4,7 +4,7 @@ const Refunds = () => {
     const [refunds, setRefunds] = React.useState([]);
 
     React.useEffect(() => {
-        fetch('http://localhost:8000/api/finance/refund_transaction')
+        fetch('https://sandbox.erp.optiven.co.ke/api/finance/refund_transaction')
             .then(response => response.json())
             .then(data => setRefunds(data))
             .catch(error => console.error('Error fetching refunds:', error));

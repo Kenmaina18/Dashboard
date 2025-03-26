@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-function Modal({ isOpen, onClose, onSubmit, title, initialData = {} }) {
+function Modal({ isOpen, onClose, onSubmit, title, initialData = [] }) {
   const [formData, setFormData] = React.useState(initialData);
 
   React.useEffect(() => {
@@ -88,12 +88,12 @@ function Modal({ isOpen, onClose, onSubmit, title, initialData = {} }) {
 export default function CommissionRangeTable() {
   const [ranges, setRanges] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
-  const [isAddModalOpen, setAddModalOpen] = React.useState(false);
   const [isEditModalOpen, setEditModalOpen] = React.useState(null);
+  const [isAddModalOpen, setAddModalOpen] = React.useState(false);
 
   const fetchRanges = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/finance/commission_structure');
+      const response = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/commission_structure');
       const data = await response.json();
       setRanges(data);
     } catch (error) {
@@ -107,30 +107,69 @@ export default function CommissionRangeTable() {
     fetchRanges();
   }, []);
 
-  const handleAddRange = async (formData) => {
+  const handleNewData = async (formData) => {
+    const { lower_limit, upper_limit, percentage } = formData;
+  
+    // Validate the data before sending the POST request
+    if (isNaN(lower_limit) || isNaN(upper_limit) || isNaN(percentage)) {
+      alert('All fields must contain valid numbers.');
+      return;
+    }
+  
+    if (lower_limit <= 0 || upper_limit <= 0 || percentage <= 0) {
+      alert('Limits and percentage must be greater than zero.');
+      return;
+    }
+  
     try {
-      const response = await fetch('http://localhost:8000/api/finance/commission_structure', {
+      const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/commission_structure`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lower_limit: parseFloat(formData.lower_limit),
-          upper_limit: parseFloat(formData.upper_limit),
-          percentage: parseFloat(formData.percentage),
+          lower_limit: parseFloat(lower_limit),
+          upper_limit: parseFloat(upper_limit),
+          percentage: parseFloat(percentage),
         }),
       });
+  
+      if (!response.ok) {
+        throw new Error('Failed to create the commission range.');
+      }
+  
       const newRange = await response.json();
+  
+      // Add new range to the list
       setRanges((prev) => [...prev, newRange]);
+      setAddModalOpen(false);
     } catch (error) {
-      console.error('Error adding commission range:', error);
+      console.error('Error creating commission range:', error);
+      alert('Failed to create commission range. Please try again.');
     }
   };
 
   const handleUpdateRange = async (rangeId, formData) => {
+    const { lower_limit, upper_limit, percentage } = formData;
+
+    // Validate the data before sending the PUT request
+    if (isNaN(lower_limit) || isNaN(upper_limit) || isNaN(percentage)) {
+      alert('All fields must contain valid numbers.');
+      return;
+    }
+
+    if (lower_limit <= 0 || upper_limit <= 0 || percentage <= 0) {
+      alert('Limits and percentage must be greater than zero.');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:8000/api/finance/commission_structure`, {
+      const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/commission_structure/${rangeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          lower_limit: parseFloat(lower_limit),
+          upper_limit: parseFloat(upper_limit),
+          percentage: parseFloat(percentage),
+        }),
       });
       const updatedRange = await response.json();
       setRanges((prev) => prev.map((range) => (range.id === rangeId ? updatedRange : range)));
@@ -142,7 +181,7 @@ export default function CommissionRangeTable() {
   const handleDeleteRange = async (rangeId) => {
     if (window.confirm('Are you sure you want to delete this commission range?')) {
       try {
-        await fetch(`http://localhost:8000/api/finance/commission_structure`, {
+        await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/commission_structure/${rangeId}`, {
           method: 'DELETE',
         });
         setRanges((prev) => prev.filter((range) => range.id !== rangeId));
@@ -156,12 +195,19 @@ export default function CommissionRangeTable() {
 
   return (
     <div style={{ padding: '16px', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <button onClick={() => setAddModalOpen(true)} style={{
-          padding: '10px 20px', backgroundColor: '#2d3748', color: '#fff',
-          border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px',
-          fontFamily: 'inherit'
-        }}>
+      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button 
+          onClick={() => setAddModalOpen(true)} 
+          style={{
+            backgroundColor: '#2d3748', 
+            color: '#fff',
+            padding: '8px 16px', 
+            borderRadius: '4px',
+            border: 'none', 
+            cursor: 'pointer',
+            fontFamily: 'inherit'
+          }}
+        >
           Add Commission Range
         </button>
       </div>
@@ -220,113 +266,21 @@ export default function CommissionRangeTable() {
       </div>
 
       <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={handleAddRange}
-        title="Add Commission Range"
-      />
-
-      <Modal
         isOpen={!!isEditModalOpen}
         onClose={() => setEditModalOpen(null)}
         onSubmit={(formData) => handleUpdateRange(isEditModalOpen.id, formData)}
         title="Edit Commission Range"
         initialData={isEditModalOpen || {}}
       />
-    
- 
-  {/* 🖌️ Google Font Import & Global CSS Update */}
-<style>{`
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-  * {
-    font-family: 'Inter', sans-serif;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  th, td {
-    padding: 12px 18px;
-    font-size: 14px;
-  }
-
-  thead tr {
-    background-color: #f7fafc;
-    text-transform: uppercase;
-    color: #4a5568;
-  }
-
-  tbody tr:hover {
-    background-color: #f9fafb;
-  }
-
-  button {
-    font-family: 'Inter', sans-serif;
-    font-weight: 500;
-  }
-
-  .action-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 6px 8px;
-  }
-
-  .action-button.edit {
-    color: #3182ce;
-    margin-right: 8px;
-  }
-
-  .action-button.delete {
-    color: #e53e3e;
-  }
-
-  .modal-input {
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #cbd5e0;
-    margin-top: 6px;
-  }
-
-  .modal-label {
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 4px;
-    display: block;
-    color: #4a5568;
-  }
-
-  .modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .modal-buttons button {
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  .modal-buttons .cancel {
-    background-color: #edf2f7;
-    color: #2d3748;
-  }
-
-  .modal-buttons .save {
-    background-color: #2d3748;
-    color: #fff;
-  }
-`}</style>
-</div>
-);
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleNewData}
+        title="Add Commission Range"
+        initialData={{}}
+      />
+    </div>
+  );
 }
+

@@ -1,7 +1,10 @@
+
 import * as React from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import { configureStore, createSlice } from '@reduxjs/toolkit';
+import { Provider, useSelector, useDispatch } from 'react-redux';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, LogOut, FileText, Calendar, DollarSign, Users, ChevronRight, Settings } from 'lucide-react';
+import { Menu, X, LogOut, FileText, Calendar, DollarSign, Users, ChevronRight, Settings } from 'lucide-react';
 import CollapsibleTable from './LeadsPage';
 import CommissionPeriodTable from './FinanceCommissionPeriod';
 import CommissionRangeTable from './COmmisionStructure';
@@ -9,20 +12,72 @@ import MarketerCommissionTable from './MarketCommission';
 import Refunds from './Refunds';
 import './dashboard.css';
 
+// Redux Slices
+const sidebarSlice = createSlice({
+  name: 'sidebar',
+  initialState: {
+    isOpen: false,
+    isMobile: window.innerWidth <= 768
+  },
+  reducers: {
+    toggleSidebar: (state) => {
+      state.isOpen = !state.isOpen;
+    },
+    closeSidebar: (state) => {
+      state.isOpen = false;
+    },
+    setMobileView: (state, action) => {
+      state.isMobile = action.payload;
+    }
+  }
+});
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState: {
+    user: {
+      name: 'John Doe',
+      initials: 'JD',
+      isAuthenticated: true
+    }
+  },
+  reducers: {
+    logout: (state) => {
+      state.user = {
+        name: '',
+        initials: '',
+        isAuthenticated: false
+      };
+    }
+  }
+});
+
+const navigationSlice = createSlice({
+  name: 'navigation',
+  initialState: {
+    currentPage: '/'
+  },
+  reducers: {
+    setCurrentPage: (state, action) => {
+      state.currentPage = action.payload;
+    }
+  }
+});
+
+// Create Redux Store
+const store = configureStore({
+  reducer: {
+    sidebar: sidebarSlice.reducer,
+    auth: authSlice.reducer,
+    navigation: navigationSlice.reducer
+  }
+});
+
 // Page transition variants
 const pageVariants = {
-  initial: {
-    opacity: 0,
-    y: 10,
-  },
-  in: {
-    opacity: 1,
-    y: 0,
-  },
-  out: {
-    opacity: 0,
-    y: -10,
-  }
+  initial: { opacity: 0, y: 10 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -10 }
 };
 
 const pageTransition = {
@@ -31,21 +86,51 @@ const pageTransition = {
   duration: 0.3
 };
 
-// These components need to be inside the Router context
-function SidebarContent({ isOpen, toggleSidebar }) {
-  const location = useLocation();
+// Navigation configuration
+const NAVIGATION_ITEMS = [
+  { 
+    path: '/', 
+    label: 'Leads & Payments', 
+    icon: <FileText size={20} />,
+    component: CollapsibleTable 
+  },
+  { 
+    path: '/commission-periods', 
+    label: 'Commission Periods', 
+    icon: <Calendar size={20} />,
+    component: CommissionPeriodTable 
+  },
+  { 
+    path: '/commission-ranges', 
+    label: 'Commission Ranges', 
+    icon: <DollarSign size={20} />,
+    component: CommissionRangeTable 
+  },
+  { 
+    path: '/marketer-commissions', 
+    label: 'Marketer Commissions', 
+    icon: <Users size={20} />,
+    component: MarketerCommissionTable 
+  },
+  { 
+    path: '/refunds', 
+    label: 'Refunds', 
+    icon: <DollarSign size={20} />,
+    component: Refunds 
+  }
+];
 
-  const menuItems = [
-    { path: '/', label: 'Leads & Payments', icon: <FileText size={20} /> },
-    { path: '/commission-periods', label: 'Commission Periods', icon: <Calendar size={20} /> },
-    { path: '/commission-ranges', label: 'Commission Ranges', icon: <DollarSign size={20} /> },
-    { path: '/marketer-commissions', label: 'Marketer Commissions', icon: <Users size={20} /> },
-    { path: '/refunds', label: 'Refunds', icon: <DollarSign size={20} /> },
-  ];
+function SidebarContent() {
+  const location = useLocation();
+  const { isOpen } = useSelector((state) => state.sidebar);
+  const dispatch = useDispatch();
+
+  const toggleSidebar = () => {
+    dispatch(sidebarSlice.actions.toggleSidebar());
+  };
 
   return (
     <>
-      {/* Sidebar */}
       <motion.div
         initial={{ x: -250 }}
         animate={{ x: isOpen ? 0 : -250 }}
@@ -59,7 +144,7 @@ function SidebarContent({ isOpen, toggleSidebar }) {
           </button>
         </div>
         <ul className="sidebar-menu">
-          {menuItems.map((item) => (
+          {NAVIGATION_ITEMS.map((item) => (
             <li key={item.path}>
               <Link
                 to={item.path}
@@ -81,7 +166,6 @@ function SidebarContent({ isOpen, toggleSidebar }) {
         </div>
       </motion.div>
 
-      {/* Overlay for mobile when sidebar is open */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -98,25 +182,23 @@ function SidebarContent({ isOpen, toggleSidebar }) {
   );
 }
 
-function TopBarContent({ toggleSidebar }) {
+function TopBarContent() {
   const location = useLocation();
+  const { isOpen } = useSelector((state) => state.sidebar);
+  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  const toggleSidebar = () => {
+    dispatch(sidebarSlice.actions.toggleSidebar());
+  };
+
+  const logout = () => {
+    dispatch(authSlice.actions.logout());
+  };
   
-  // Get current page title based on path
   const getPageTitle = () => {
-    switch(location.pathname) {
-      case '/':
-        return 'Leads & Payments';
-      case '/commission-periods':
-        return 'Commission Periods';
-      case '/commission-ranges':
-        return 'Commission Ranges';
-      case '/marketer-commissions':
-        return 'Marketer Commissions';
-      case '/refunds':
-        return 'Refunds';
-      default:
-        return 'Dashboard';
-    }
+    const currentRoute = NAVIGATION_ITEMS.find(item => item.path === location.pathname);
+    return currentRoute ? currentRoute.label : 'Dashboard';
   };
   
   return (
@@ -129,10 +211,10 @@ function TopBarContent({ toggleSidebar }) {
       </div>
       <div className="user-profile">
         <div className="user-info">
-          <div className="avatar">JD</div>
-          <span>John Doe</span>
+          <div className="avatar">{user.initials}</div>
+          <span>{user.name}</span>
         </div>
-        <button className="logout-btn">
+        <button onClick={logout} className="logout-btn">
           <LogOut size={18} />
           <span>Logout</span>
         </button>
@@ -159,67 +241,73 @@ function PageWrapper({ children, title }) {
   );
 }
 
-function AppRoutes({ isOpen }) {
+function AppRoutes() {
+  const { isOpen } = useSelector((state) => state.sidebar);
+
   return (
-    <div className="content-area">
+    <div 
+      className="content-area" 
+      style={{ 
+        marginLeft: isOpen ? '250px' : '0',
+        width: isOpen ? 'calc(100% - 250px)' : '100%' 
+      }}
+    >
       <Routes>
-        <Route path="/" element={
-          <PageWrapper title="Leads & Payments">
-            <CollapsibleTable />
-          </PageWrapper>
-        } />
-        <Route path="/commission-periods" element={
-          <PageWrapper title="Commission Periods">
-            <CommissionPeriodTable />
-          </PageWrapper>
-        } />
-        <Route path="/commission-ranges" element={
-          <PageWrapper title="Commission Ranges">
-            <CommissionRangeTable />
-          </PageWrapper>
-        } />
-        <Route path="/marketer-commissions" element={
-          <PageWrapper title="Marketer Commissions">
-            <MarketerCommissionTable />
-          </PageWrapper>
-        } />
-        <Route path="/refunds" element={
-          <PageWrapper title="Refunds">
-            <Refunds />
-          </PageWrapper>
-        } />
+        {NAVIGATION_ITEMS.map((route) => (
+          <Route 
+            key={route.path} 
+            path={route.path} 
+            element={
+              <PageWrapper title={route.label}>
+                <route.component />
+              </PageWrapper>
+            } 
+          />
+        ))}
+        {/* Redirect to homepage or 404 for undefined routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );
 }
 
-// Main App Component
 function MainApp() {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const toggleSidebar = () => setIsOpen(!isOpen);
+  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  // Handle responsive sidebar
+  React.useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      dispatch(sidebarSlice.actions.setMobileView(isMobile));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [dispatch]);
+
+  // Protect routes based on authentication
+  if (!user.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar - inside Router context */}
-      <SidebarContent isOpen={isOpen} toggleSidebar={toggleSidebar} />
-
-      {/* Main Content */}
-      <div className="main-content" style={{ marginLeft: isOpen ? '250px' : '0' }}>
-        {/* Top Bar - inside Router context */}
-        <TopBarContent toggleSidebar={toggleSidebar} />
-        
-        {/* Content Area with Routes */}
-        <AppRoutes isOpen={isOpen} />
+      <SidebarContent />
+      <div className="main-content">
+        <TopBarContent />
+        <AppRoutes />
       </div>
     </div>
   );
 }
 
-// Main export that wraps everything in Router
 export default function Dashboard() {
   return (
-    <Router>
-      <MainApp />
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <MainApp />
+      </Router>
+    </Provider>
   );
 }

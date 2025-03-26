@@ -10,7 +10,7 @@ function Row({ row }) {
       setLoadingPayments(true);
       try {
         const response = await fetch(
-          `http://localhost:8000/api/finance/Commission-history?lead_file_id=${row.lead_file}`
+          `https://sandbox.erp.optiven.co.ke/api/finance/Commission-history?lead_file_id=${row.lead_file}`
         );
         if (!response.ok) throw new Error("Failed to fetch payments");
         const data = await response.json();
@@ -124,7 +124,7 @@ export default function CollapsibleTable() {
     const fetchLeads = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8000/api/finance/commission"
+          "https://sandbox.erp.optiven.co.ke/api/finance/commission"
         );
         if (!response.ok) throw new Error("Failed to fetch leads");
         const data = await response.json();

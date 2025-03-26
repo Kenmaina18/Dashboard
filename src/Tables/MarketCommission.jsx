@@ -9,7 +9,7 @@ export default function MarketerCommissionTable() {
 
   const fetchOpenPeriod = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/finance/commission_period/open');
+      const res = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/commission_period/open');
       if (res.ok) {
         const data = await res.json();
         setOpenPeriod(data); // e.g., { period_start: "2025-03-01", period_end: "2025-03-31" }
@@ -21,7 +21,7 @@ export default function MarketerCommissionTable() {
 
   const fetchCommissions = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/finance/marketers_commission');
+      const response = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/marketers_commission');
       const data = await response.json();
       setCommissions(data);
 

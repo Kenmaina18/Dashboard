@@ -93,7 +93,7 @@ export default function CommissionPeriodTable() {
 
   const fetchPeriods = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/finance/marketing_period');
+      const response = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/marketing_period');
       const data = await response.json();
       setPeriods(data);
     } catch (error) {
@@ -103,7 +103,7 @@ export default function CommissionPeriodTable() {
 
   const handleAddPeriod = async (formData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/finance/marketing_period', {
+      const response = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/marketing_period', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -117,7 +117,7 @@ export default function CommissionPeriodTable() {
 
   const handleUpdatePeriod = async (id, formData) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/finance/marketing_period/${id}`, {
+      const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/marketing_period/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -132,7 +132,7 @@ export default function CommissionPeriodTable() {
   const handleDeletePeriod = async (id) => {
     if (window.confirm('Delete this commission period?')) {
       try {
-        await fetch(`http://localhost:8000/api/finance/marketing_period/${id}`, { method: 'DELETE' });
+        await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/marketing_period/${id}`, { method: 'DELETE' });
         setPeriods((prev) => prev.filter((p) => p.id !== id));
       } catch (error) {
         console.error('Error deleting period:', error);
@@ -142,7 +142,7 @@ export default function CommissionPeriodTable() {
 
   const fetchTransactions = async (periodId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/commission/highest`);
+      const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/commission/highest`);
       const data = await response.json();
       setTransactions(data);
       console.log('Transactions:', data);

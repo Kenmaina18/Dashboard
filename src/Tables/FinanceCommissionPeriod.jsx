@@ -1,97 +1,17 @@
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 
-function Modal({ isOpen, onClose, onSubmit, title, initialData = {} }) {
-  const [formData, setFormData] = React.useState(initialData);
+function CommissionPeriodTable() {
+  const [periods, setPeriods] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentPeriod, setCurrentPeriod] = useState({
+    start_date: null,
+    end_date: null,
+    status: 'DRAFT'
+  });
 
-  React.useEffect(() => {
-    setFormData(initialData);
-  }, [initialData]);
-
-  const handleChange = (e) => {
-    e.preventDefault();
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
-      justifyContent: 'center', alignItems: 'center', zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: '#fff', padding: '24px', borderRadius: '10px',
-        width: '420px', maxWidth: '90%', fontFamily: 'Inter, sans-serif',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.15)'
-      }}>
-        <h3 style={{ marginBottom: '16px', color: '#2d3748', fontSize: '18px', fontWeight: 600 }}>{title}</h3>
-        <form onSubmit={handleSubmit}>
-          {['start_date', 'end_date'].map((field) => (
-            <div key={field} style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', color: '#4a5568' }}>
-                {field === 'start_date' ? 'Start Date' : 'End Date'}
-              </label>
-              <input
-                type="datetime-local"
-                name={field}
-                value={formData[field] ? formData[field].slice(0, 16) : ''}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%', padding: '10px', borderRadius: '6px',
-                  border: '1px solid #cbd5e0', fontSize: '14px'
-                }}
-              />
-            </div>
-          ))}
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', color: '#4a5568' }}>Status</label>
-            <select
-              name="status"
-              value={formData.status || ''}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%', padding: '10px', borderRadius: '6px',
-                border: '1px solid #cbd5e0', fontSize: '14px'
-              }}
-            >
-              <option value="">Select Status</option>
-              <option value="Opened">Opened</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button type="button" onClick={onClose} style={{
-              backgroundColor: '#edf2f7', padding: '8px 16px',
-              borderRadius: '4px', border: 'none', cursor: 'pointer'
-            }}>Cancel</button>
-            <button type="submit" style={{
-              backgroundColor: '#2d3748', color: '#fff',
-              padding: '8px 16px', borderRadius: '4px',
-              border: 'none', cursor: 'pointer'
-            }}>Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-export default function CommissionPeriodTable() {
-  const [periods, setPeriods] = React.useState([]);
-  const [isAddModalOpen, setAddModalOpen] = React.useState(false);
-  const [isEditModalOpen, setEditModalOpen] = React.useState(null);
-  const [transactions, setTransactions] = React.useState([]);
-
+  // Fetch Periods
   const fetchPeriods = async () => {
     try {
       const response = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/marketing_period');
@@ -102,34 +22,55 @@ export default function CommissionPeriodTable() {
     }
   };
 
-  const handleAddPeriod = async (formData) => {
+  // Create New Period
+  const handleCreatePeriod = async () => {
     try {
       const response = await fetch('https://sandbox.erp.optiven.co.ke/api/finance/marketing_period', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(currentPeriod)
       });
-      const newPeriod = await response.json();
-      setPeriods((prev) => [...prev, newPeriod]);
+      
+      if (response.ok) {
+        const newPeriod = await response.json();
+        setPeriods([...periods, newPeriod]);
+        setIsAddModalOpen(false);
+        // Reset current period
+        setCurrentPeriod({
+          start_date: null,
+          end_date: null,
+          status: 'DRAFT'
+        });
+      }
     } catch (error) {
-      console.error('Error adding period:', error);
+      console.error('Error creating period:', error);
     }
   };
 
-  const handleUpdatePeriod = async (id, formData) => {
+  // Update Existing Period
+  const handleUpdatePeriod = async () => {
     try {
-      const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/marketing_period/${id}`, {
+      const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/finance/marketing_period/${currentPeriod.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(currentPeriod)
       });
-      const updatedPeriod = await response.json();
-      setPeriods((prev) => prev.map((p) => (p.id === id ? updatedPeriod : p)));
+      
+      if (response.ok) {
+        const updatedPeriod = await response.json();
+        setPeriods(periods.map(p => p.id === updatedPeriod.id ? updatedPeriod : p));
+        setIsEditModalOpen(false);
+      }
     } catch (error) {
       console.error('Error updating period:', error);
     }
   };
 
+  // Delete Period
   const handleDeletePeriod = async (id) => {
     if (window.confirm('Delete this commission period?')) {
       try {
@@ -141,6 +82,7 @@ export default function CommissionPeriodTable() {
     }
   };
 
+  // Fetch Transactions
   const fetchTransactions = async (Id) => {
     try {
       const response = await fetch(`https://sandbox.erp.optiven.co.ke/api/commission/highest`);
@@ -152,25 +94,215 @@ export default function CommissionPeriodTable() {
     }
   };
 
-  React.useEffect(() => {
+  // Open Edit Modal
+  const openEditModal = (period) => {
+    setCurrentPeriod(period);
+    setIsEditModalOpen(true);
+  };
+
+  useEffect(() => {
     fetchPeriods();
   }, []);
 
-  return (
-    <div style={{ padding: '16px', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <button
-          onClick={() => setAddModalOpen(true)}
-          style={{
-            padding: '10px 18px', backgroundColor: '#2d3748',
-            color: '#fff', border: 'none', borderRadius: '6px',
-            fontSize: '15px', cursor: 'pointer'
-          }}
-        >
-          + Add Commission Period
-        </button>
-      </div>
+  // Modal Styles
+  const modalStyles = {
+    overlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000
+    },
+    modal: {
+      backgroundColor: 'white',
+      padding: '20px',
+      borderRadius: '8px',
+      width: '500px',
+      maxWidth: '90%',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+    },
+    input: {
+      width: '100%',
+      padding: '10px',
+      marginBottom: '10px',
+      border: '1px solid #ddd',
+      borderRadius: '4px'
+    },
+    button: {
+      padding: '10px 15px',
+      margin: '5px',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer'
+    }
+  };
 
+  // Render Modals
+  const renderAddModal = () => {
+    if (!isAddModalOpen) return null;
+
+    return (
+      <div style={modalStyles.overlay} onClick={() => setIsAddModalOpen(false)}>
+        <div 
+          style={modalStyles.modal} 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2>Add Commission Period</h2>
+          
+          <div>
+            <label>Start Date</label>
+            <input 
+              type="date" 
+              style={modalStyles.input}
+              value={currentPeriod.start_date ? new Date(currentPeriod.start_date).toISOString().split('T')[0] : ''}
+              onChange={(e) => setCurrentPeriod(prev => ({
+                ...prev, 
+                start_date: new Date(e.target.value)
+              }))}
+            />
+          </div>
+          
+          <div>
+            <label>End Date</label>
+            <input 
+              type="date" 
+              style={modalStyles.input}
+              value={currentPeriod.end_date ? new Date(currentPeriod.end_date).toISOString().split('T')[0] : ''}
+              onChange={(e) => setCurrentPeriod(prev => ({
+                ...prev, 
+                end_date: new Date(e.target.value)
+              }))}
+            />
+          </div>
+          
+          <div>
+            <label>Status</label>
+            <select 
+              style={modalStyles.input}
+              value={currentPeriod.status}
+              onChange={(e) => setCurrentPeriod(prev => ({
+                ...prev, 
+                status: e.target.value
+              }))}
+            >
+              <option value="DRAFT">Draft</option>
+              <option value="ACTIVE">Active</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+          </div>
+          
+          <div>
+            <button 
+              style={{...modalStyles.button, backgroundColor: '#4CAF50', color: 'white'}}
+              onClick={handleCreatePeriod}
+            >
+              Create Period
+            </button>
+            <button 
+              style={{...modalStyles.button, backgroundColor: '#f44336', color: 'white'}}
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEditModal = () => {
+    if (!isEditModalOpen) return null;
+
+    return (
+      <div style={modalStyles.overlay} onClick={() => setIsEditModalOpen(false)}>
+        <div 
+          style={modalStyles.modal} 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2>Edit Commission Period</h2>
+          
+          <div>
+            <label>Start Date</label>
+            <input 
+              type="date" 
+              style={modalStyles.input}
+              value={currentPeriod.start_date ? new Date(currentPeriod.start_date).toISOString().split('T')[0] : ''}
+              onChange={(e) => setCurrentPeriod(prev => ({
+                ...prev, 
+                start_date: new Date(e.target.value)
+              }))}
+            />
+          </div>
+          
+          <div>
+            <label>End Date</label>
+            <input 
+              type="date" 
+              style={modalStyles.input}
+              value={currentPeriod.end_date ? new Date(currentPeriod.end_date).toISOString().split('T')[0] : ''}
+              onChange={(e) => setCurrentPeriod(prev => ({
+                ...prev, 
+                end_date: new Date(e.target.value)
+              }))}
+            />
+          </div>
+          
+          <div>
+            <label>Status</label>
+            <select 
+              style={modalStyles.input}
+              value={currentPeriod.status}
+              onChange={(e) => setCurrentPeriod(prev => ({
+                ...prev, 
+                status: e.target.value
+              }))}
+            >
+              <option value="DRAFT">Draft</option>
+              <option value="ACTIVE">Active</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+          </div>
+          
+          <div>
+            <button 
+              style={{...modalStyles.button, backgroundColor: '#4CAF50', color: 'white'}}
+              onClick={handleUpdatePeriod}
+            >
+              Update Period
+            </button>
+            <button 
+              style={{...modalStyles.button, backgroundColor: '#f44336', color: 'white'}}
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '16px', fontFamily: 'Arial, sans-serif' }}>
+      {/* Add Period Button */}
+      <button 
+        onClick={() => setIsAddModalOpen(true)}
+        style={{
+          ...modalStyles.button, 
+          backgroundColor: '#2196F3', 
+          color: 'white',
+          marginBottom: '16px'
+        }}
+      >
+        Add Commission Period
+      </button>
+
+      {/* Periods Table */}
       <div style={{
         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         borderRadius: '8px',
@@ -183,8 +315,8 @@ export default function CommissionPeriodTable() {
           fontSize: '14px',
           minWidth: '720px'
         }}>
-          <thead className="header-row">
-            <tr>
+          <thead>
+            <tr style={{ backgroundColor: '#f1f1f1' }}>
               <th style={{ textAlign: 'left', padding: '14px' }}>ID</th>
               <th style={{ textAlign: 'right', padding: '14px' }}>Start Date</th>
               <th style={{ textAlign: 'right', padding: '14px' }}>End Date</th>
@@ -208,17 +340,40 @@ export default function CommissionPeriodTable() {
                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>{p.status}</td>
                   <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                     <button
-                      onClick={() => setEditModalOpen(p)}
-                      style={{ color: '#3182ce', border: 'none', background: 'none', cursor: 'pointer', marginRight: '10px' }}
-                    >Edit</button>
+                      onClick={() => openEditModal(p)}
+                      style={{ 
+                        color: '#2196F3', 
+                        border: 'none', 
+                        background: 'none', 
+                        cursor: 'pointer', 
+                        marginRight: '10px' 
+                      }}
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleDeletePeriod(p.id)}
-                      style={{ color: '#e53e3e', border: 'none', background: 'none', cursor: 'pointer', marginRight: '10px' }}
-                    >Delete</button>
+                      style={{ 
+                        color: '#f44336', 
+                        border: 'none', 
+                        background: 'none', 
+                        cursor: 'pointer', 
+                        marginRight: '10px' 
+                      }}
+                    >
+                      Delete
+                    </button>
                     <button
                       onClick={() => fetchTransactions(p.id)}
-                      style={{ color: '#38a169', border: 'none', background: 'none', cursor: 'pointer' }}
-                    >View Transactions</button>
+                      style={{ 
+                        color: '#4CAF50', 
+                        border: 'none', 
+                        background: 'none', 
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      View Transactions
+                    </button>
                   </td>
                 </tr>
               ))
@@ -227,30 +382,27 @@ export default function CommissionPeriodTable() {
         </table>
       </div>
 
-      <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSubmit={handleAddPeriod}
-        title="Add Commission Period"
-      />
-      <Modal
-        isOpen={!!isEditModalOpen}
-        onClose={() => setEditModalOpen(null)}
-        onSubmit={(formData) => handleUpdatePeriod(isEditModalOpen.id, formData)}
-        title="Edit Commission Period"
-        initialData={isEditModalOpen || {}}
-      />
-
+      {/* Transactions Section */}
       {transactions.length > 0 && (
         <div style={{ marginTop: '24px' }}>
-          <h4 style={{ fontSize: '16px', marginBottom: '12px', fontWeight: '600' }}>Commission-Eligible Transactions</h4>
+          <h4 style={{ fontSize: '16px', marginBottom: '12px', fontWeight: '600' }}>
+            Commission-Eligible Transactions
+          </h4>
           <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
             {transactions.map((txn) => (
-              <li key={txn.id}>{txn.marketer} – {txn.plot_number} – {txn.percentage}% – KES {txn.total_paid}</li>
+              <li key={txn.id}>
+                {txn.marketer} – {txn.plot_number} – {txn.percentage}% – KES {txn.total_paid}
+              </li>
             ))}
           </ul>
         </div>
       )}
+
+      {/* Modals */}
+      {renderAddModal()}
+      {renderEditModal()}
     </div>
   );
 }
+
+export default CommissionPeriodTable;
